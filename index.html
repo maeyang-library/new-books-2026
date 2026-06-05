@@ -104,8 +104,11 @@ const sort = document.getElementById('sort');
 const count = document.getElementById('count');
 const empty = document.getElementById('empty');
 
-function coverUrl(isbn) {
-  return `https://books.google.com/books/content?vid=ISBN${isbn}&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api`;
+function coverUrl(book) {
+  if (book.cover) return book.cover;
+  if (book.coverUrl) return book.coverUrl;
+  if (book.표지URL) return book.표지URL;
+  return `https://books.google.com/books/content?vid=ISBN${book.isbn}&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api`;
 }
 
 function bookLink(book) {
@@ -148,7 +151,7 @@ function render() {
     <article class="card">
       <a href="${bookLink(b)}" target="_blank" rel="noopener">
         <div class="coverBox">
-          <img class="cover" loading="lazy" src="${coverUrl(b.isbn)}" alt="${escapeHtml(b.title)} 표지"
+          <img class="cover" loading="lazy" src="${coverUrl(b)}" alt="${escapeHtml(b.title)} 표지"
                onerror="this.remove(); this.parentElement.innerHTML='<div class=&quot;fallback&quot;>${escapeHtml(short(b.title,34))}</div>';">
         </div>
         <div class="info">
