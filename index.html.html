@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026학년도 1차 신간도서</title>
+<style>
+:root{--bg:#f7f4ef;--card:#fffdf9;--ink:#2d2a26;--muted:#756f68;--line:#e7ded2;--accent:#6f8f72;--accent2:#d8a45b}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Arial,sans-serif;background:linear-gradient(180deg,#fbf8f2 0%,var(--bg) 100%);color:var(--ink)}
+.hero{padding:34px 18px 18px;text-align:center}.hero h1{margin:0 0 8px;font-size:clamp(28px,4vw,46px);letter-spacing:-.04em}.subtitle{color:var(--muted);font-size:16px;margin:0}
+header{position:sticky;top:0;z-index:10;backdrop-filter:blur(8px);background:rgba(247,244,239,.92);border-bottom:1px solid var(--line)}.wrap{max-width:1180px;margin:0 auto;padding:22px 18px}.toolbar{display:grid;grid-template-columns:1fr 170px 130px;gap:10px;align-items:center}
+input,select{width:100%;border:1px solid var(--line);border-radius:14px;background:white;padding:13px 14px;font-size:15px;outline:none}input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(111,143,114,.15)}.count{color:var(--muted);font-size:14px;margin-top:10px}.notice{color:#8a6b42;font-size:13px;margin-top:8px;display:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:22px;padding:20px 18px 44px}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 8px 18px rgba(45,42,38,.07);transition:.18s transform,.18s box-shadow}.card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(45,42,38,.12)}
+.coverBox{aspect-ratio:2/3;background:#eee7dc;display:flex;align-items:center;justify-content:center}.cover{width:100%;height:100%;object-fit:cover;display:block}.fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:14px;text-align:center;color:#7a746d;font-weight:800;line-height:1.45;word-break:keep-all;background:linear-gradient(160deg,#eee7dc,#f8f4ee)}
+.info{padding:13px 13px 15px}.title{font-weight:800;font-size:15px;line-height:1.35;margin:0 0 8px;letter-spacing:-.03em}.meta{margin:0;color:var(--muted);font-size:12.5px;line-height:1.45}.tag{display:inline-block;margin-top:9px;padding:4px 8px;border-radius:999px;background:#eef3ed;color:#526e55;font-size:11.5px}.empty{text-align:center;color:var(--muted);padding:60px 20px;display:none}footer{text-align:center;color:var(--muted);font-size:12px;padding:0 18px 32px}@media(max-width:700px){.toolbar{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.wrap{padding:16px 14px}}
+</style>
+</head>
+<body>
+<section class="hero"><h1>2026학년도 1차 신간도서</h1><p class="subtitle">혜윰마루 도서관에 새로 들어올 책을 미리 둘러보세요.</p></section>
+<header><div class="wrap"><div class="toolbar"><input id="search" type="search" placeholder="책 제목, 저자, 출판사, ISBN 검색"><select id="category"><option value="">전체 분야</option></select><select id="sort"><option value="no">목록순</option><option value="title">제목순</option><option value="category">분야순</option></select></div><div class="count" id="count">불러오는 중...</div><div class="notice" id="notice"></div></div></header>
+<main class="wrap"><div class="grid" id="grid"></div><div class="empty" id="empty">검색 결과가 없습니다.</div></main>
+<footer>표지는 수집된 공개 이미지 주소를 사용합니다. 일부 도서는 표지가 표시되지 않을 수 있습니다.</footer>
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ7rrs83x08g1cL47cBwJBWuQYaFVPu809-T4eYoVxaN8VoMj6gJIaC3nNTjs26fXtmI9c00Reprf5y/pub?gid=718148944&single=true&output=csv';
+let books=[];let filtered=[];
+const $=id=>document.getElementById(id);
+function parseCSV(text){const rows=[];let row=[],cur='',q=false;for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];if(q){if(c==='"'&&n==='"'){cur+='"';i++;}else if(c==='"'){q=false;}else cur+=c;}else{if(c==='"')q=true;else if(c===','){row.push(cur);cur='';}else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur='';}else if(c!=='\r')cur+=c;}}row.push(cur);rows.push(row);return rows.filter(r=>r.some(v=>String(v).trim()!==''));}
+function isISBN(v){return /^97[89]\d{10}$/.test(String(v||'').replace(/[^0-9Xx]/g,''));}
+function clean(v){return String(v??'').trim();}
+function normalizeRows(rows){const header=rows[0].map(h=>clean(h).replace(/^\uFEFF/,''));const idx=name=>header.indexOf(name);const out=[];for(let r=1;r<rows.length;r++){const a=rows[r];let rec=null;const normalISBN=clean(a[idx('ISBN')]);const shiftedISBN=clean(a[idx('분야')]);
+ if(isISBN(normalISBN)){rec={no:clean(a[idx('순번')])||clean(a[idx('순')])||clean(a[0]),isbn:normalISBN,title:clean(a[idx('도서명')]),author:clean(a[idx('저자')]),publisher:clean(a[idx('출판사')]),category:clean(a[idx('분야')]),note:clean(a[idx('비고')]),cover:clean(a[idx('표지URL')]),source:clean(a[idx('표지출처')]),status:clean(a[idx('표지')])};}
+ else if(isISBN(shiftedISBN)){rec={no:clean(a[0]),isbn:shiftedISBN,title:clean(a[1]),author:clean(a[2]),publisher:clean(a[3]),category:clean(a[4]),note:'',cover:clean(a[6]),source:clean(a[7]),status:clean(a[8])};}
+ if(rec&&rec.title&&rec.isbn){out.push(rec);}}
+ const map=new Map();for(const b of out){const old=map.get(b.isbn);if(!old){map.set(b.isbn,b);continue;}const merged={...old,...b};if(!b.note&&old.note)merged.note=old.note;if(!b.cover&&old.cover)merged.cover=old.cover;if(!b.category&&old.category)merged.category=old.category;map.set(b.isbn,merged);}return Array.from(map.values()).sort((a,b)=>(Number(a.no)||9999)-(Number(b.no)||9999));}
+function coverFallback(isbn){return `https://books.google.com/books/content?vid=ISBN${isbn}&printsec=frontcover&img=1&zoom=1&source=gbs_api`;}
+function setupCategories(){const cats=[...new Set(books.map(b=>b.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));$('category').innerHTML='<option value="">전체 분야</option>'+cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');}
+function applyFilter(){const q=$('search').value.trim().toLowerCase();const c=$('category').value;filtered=books.filter(b=>{const text=[b.title,b.author,b.publisher,b.isbn,b.category,b.note].join(' ').toLowerCase();return (!q||text.includes(q))&&(!c||b.category===c);});const s=$('sort').value;if(s==='title')filtered.sort((a,b)=>a.title.localeCompare(b.title,'ko'));else if(s==='category')filtered.sort((a,b)=>(a.category||'').localeCompare(b.category||'','ko')||(Number(a.no)-Number(b.no)));else filtered.sort((a,b)=>(Number(a.no)||9999)-(Number(b.no)||9999));render();}
+function render(){const grid=$('grid'),empty=$('empty');$('count').textContent=`총 ${books.length}권 중 ${filtered.length}권 표시`;empty.style.display=filtered.length?'none':'block';grid.innerHTML=filtered.map(b=>card(b)).join('');}
+function card(b){const src=b.cover||coverFallback(b.isbn);const title=escapeHtml(b.title);return `<article class="card"><div class="coverBox"><img class="cover" src="${escapeAttr(src)}" alt="${title} 표지" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="fallback" style="display:none">표지 준비중</div></div><div class="info"><h2 class="title">${title}</h2><p class="meta">${escapeHtml(b.author||'')}</p><p class="meta">${escapeHtml(b.publisher||'')} · ISBN ${escapeHtml(b.isbn||'')}</p>${b.category?`<span class="tag">${escapeHtml(b.category)}</span>`:''}</div></article>`;}
+function escapeHtml(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function escapeAttr(s){return escapeHtml(s).replace(/'/g,'&#39;');}
+async function init(){try{const res=await fetch(CSV_URL,{cache:'no-store'});if(!res.ok)throw new Error('CSV를 불러오지 못했습니다.');const text=await res.text();books=normalizeRows(parseCSV(text));if(!books.length)throw new Error('도서 데이터가 비어 있습니다.');setupCategories();['search','category','sort'].forEach(id=>$(id).addEventListener('input',applyFilter));applyFilter();}catch(e){$('count').textContent='데이터를 불러오지 못했습니다.';$('notice').style.display='block';$('notice').textContent=e.message+' 잠시 후 새로고침하거나 구글시트 웹 게시 상태를 확인해 주세요.';console.error(e);}}
+init();
+</script>
+</body></html>
