@@ -124,7 +124,16 @@ function initCategories() {
 }
 
 function bookLink(book) {
-  const keyword = (book.title || book.isbn || '').split(':')[0].trim();
+  let keyword = (book.title || book.isbn || '').split(':')[0].trim();
+
+if (keyword.includes('세트') || keyword.includes('전')) {
+  keyword = keyword
+    .replace(/\d+\s*~\s*\d+/g, '')
+    .replace(/-\s*전\d+권/g, '')
+    .replace(/전\d+권/g, '')
+    .replace(/세트/g, '')
+    .trim();
+}
   return `https://read365.edunet.net/PureScreen/SchoolSearchResult?searchKeyword=${encodeURIComponent(keyword)}&provCode=J10&neisCode=J100007253&schoolName=${encodeURIComponent('매양중학교')}`;
 }
 
